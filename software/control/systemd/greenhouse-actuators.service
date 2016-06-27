@@ -1,0 +1,12 @@
+[Unit]
+Description=Greenhouse Actuators
+Wants=init-pins.service
+After=init-pins.service
+
+[Service]
+Type=simple
+RemainAfterExit=no
+ExecStart=/opt/greenhouse/bin/actuators-mqtt-sub
+
+[Install]
+WantedBy=multi-user.target

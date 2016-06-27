@@ -1,0 +1,136 @@
+#!/bin/bash
+
+# I2C on A4 (SDA) & A5 (SCL)
+
+echo 28 > /sys/class/gpio/export
+echo 27 > /sys/class/gpio/export
+echo 204 > /sys/class/gpio/export
+echo 205 > /sys/class/gpio/export
+echo 236 > /sys/class/gpio/export
+echo 237 > /sys/class/gpio/export
+echo 14 > /sys/class/gpio/export
+echo 165 > /sys/class/gpio/export
+echo 212 > /sys/class/gpio/export
+echo 213 > /sys/class/gpio/export
+if [ ! -d /sys/class/gpio/gpio214 ]; then
+	echo 214 > /sys/class/gpio/export
+fi
+echo high > /sys/class/gpio/gpio214/direction
+echo low > /sys/class/gpio/gpio204/direction
+echo low > /sys/class/gpio/gpio205/direction
+echo in > /sys/class/gpio/gpio14/direction
+echo in > /sys/class/gpio/gpio165/direction
+echo low > /sys/class/gpio/gpio236/direction
+echo low > /sys/class/gpio/gpio237/direction
+echo in > /sys/class/gpio/gpio212/direction
+echo in > /sys/class/gpio/gpio213/direction
+echo mode1 > /sys/kernel/debug/gpio_debug/gpio28/current_pinmux
+echo mode1 > /sys/kernel/debug/gpio_debug/gpio27/current_pinmux
+
+# Outputs
+
+## Mode LED RED (0)
+
+echo 216 > /sys/class/gpio/export
+echo 248 > /sys/class/gpio/export
+echo high > /sys/class/gpio/gpio248/direction
+echo mode0 > /sys/kernel/debug/gpio_debug/gpio130/current_pinmux
+echo out > /sys/class/gpio/gpio130/direction
+
+## Mode LED GREEN (1)
+
+echo 217 > /sys/class/gpio/export
+echo 249 > /sys/class/gpio/export
+echo high > /sys/class/gpio/gpio249/direction
+echo mode0 > /sys/kernel/debug/gpio_debug/gpio131/current_pinmux
+echo out > /sys/class/gpio/gpio131/direction
+
+## Ventilation LED RED (2)
+
+echo 218 > /sys/class/gpio/export
+echo 250 > /sys/class/gpio/export
+echo high > /sys/class/gpio/gpio250/direction
+echo mode0 > /sys/kernel/debug/gpio_debug/gpio128/current_pinmux
+echo out > /sys/class/gpio/gpio128/direction
+
+## Ventilation LED GREEN (3)
+
+echo 12 > /sys/class/gpio/export
+echo 219 > /sys/class/gpio/export
+echo 251 > /sys/class/gpio/export
+echo high > /sys/class/gpio/gpio251/direction
+echo mode0 > /sys/kernel/debug/gpio_debug/gpio12/current_pinmux
+echo out > /sys/class/gpio/gpio12/direction
+
+## Illumination LED RED (4)
+
+echo 220 > /sys/class/gpio/export
+echo 252 > /sys/class/gpio/export
+echo high > /sys/class/gpio/gpio252/direction
+echo mode0 > /sys/kernel/debug/gpio_debug/gpio129/current_pinmux
+echo out > /sys/class/gpio/gpio129/direction
+
+## Illumination LED GREEN (5)
+
+echo 13 > /sys/class/gpio/export
+echo 221 > /sys/class/gpio/export
+echo 253 > /sys/class/gpio/export
+echo high > /sys/class/gpio/gpio253/direction
+echo mode0 > /sys/kernel/debug/gpio_debug/gpio13/current_pinmux
+echo out > /sys/class/gpio/gpio13/direction
+
+## Green LED (11)
+
+echo 43 > /sys/class/gpio/export
+echo 262 > /sys/class/gpio/export
+echo 241 > /sys/class/gpio/export
+echo 259 > /sys/class/gpio/export
+echo 227 > /sys/class/gpio/export
+echo high > /sys/class/gpio/gpio262/direction
+echo low > /sys/class/gpio/gpio241/direction
+echo mode0 > /sys/kernel/debug/gpio_debug/gpio43/current_pinmux
+echo high > /sys/class/gpio/gpio259/direction
+echo in > /sys/class/gpio/gpio227/direction
+echo out > /sys/class/gpio/gpio43/direction
+
+## Red LED (12)
+
+echo 42 > /sys/class/gpio/export
+echo 242 > /sys/class/gpio/export
+echo 260 > /sys/class/gpio/export
+echo 228 > /sys/class/gpio/export
+echo low > /sys/class/gpio/gpio242/direction
+echo mode0 > /sys/kernel/debug/gpio_debug/gpio42/current_pinmux
+echo high > /sys/class/gpio/gpio260/direction
+echo in > /sys/class/gpio/gpio228/direction
+echo out > /sys/class/gpio/gpio42/direction
+
+# Inputs
+
+## Mode switch (6) with pull-up disabled
+
+echo 182 > /sys/class/gpio/export
+echo 222 > /sys/class/gpio/export
+echo 254 > /sys/class/gpio/export
+echo mode0 > /sys/kernel/debug/gpio_debug/gpio182/current_pinmux
+echo low > /sys/class/gpio/gpio254/direction
+echo in > /sys/class/gpio/gpio222/direction
+echo in > /sys/class/gpio/gpio182/direction
+
+## Ventilation switch (7) with pull-up disabled
+
+echo 48 > /sys/class/gpio/export
+echo 223 > /sys/class/gpio/export
+echo 255 > /sys/class/gpio/export
+echo low > /sys/class/gpio/gpio255/direction
+echo in > /sys/class/gpio/gpio223/direction
+echo in > /sys/class/gpio/gpio48/direction
+
+## Illumination switch (8) with pull-up disabled
+
+echo 49 > /sys/class/gpio/export
+echo 224 > /sys/class/gpio/export
+echo 256 > /sys/class/gpio/export
+echo low > /sys/class/gpio/gpio256/direction
+echo in > /sys/class/gpio/gpio224/direction
+echo in > /sys/class/gpio/gpio49/direction

@@ -1,0 +1,14 @@
+[Unit]
+Description=Initialise Greenhouse I/O
+After=network.target
+Before=greenhouse-sensors.service
+Before=greenhouse-actuators.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=true
+ExecStart=/opt/greenhouse/bin/init-pins-control
+
+[Install]
+WantedBy=greenhouse-sensors.service
+WantedBy=greenhouse-actuators.service

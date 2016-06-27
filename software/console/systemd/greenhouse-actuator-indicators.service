@@ -1,0 +1,12 @@
+[Unit]
+Description=Greenhouse Actuator Indicators
+Wants=init-pins.service
+After=init-pins.service
+
+[Service]
+Type=simple
+RemainAfterExit=no
+ExecStart=/opt/greenhouse/bin/actuator-indicators-mqtt-sub
+
+[Install]
+WantedBy=multi-user.target

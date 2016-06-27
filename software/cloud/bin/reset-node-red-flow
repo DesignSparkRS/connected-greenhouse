@@ -1,0 +1,4 @@
+pm2 stop node-red
+rm -rf ~/.node-red/*
+cp -r ~/node-red-backup/* ~/.node-red/
+pm2 start /usr/bin/node-red -- -v

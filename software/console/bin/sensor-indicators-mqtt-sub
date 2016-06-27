@@ -1,0 +1,139 @@
+#!/usr/bin/python
+# -*- encoding: utf-8 -*-
+
+import sys
+import time
+from periphery import GPIO
+from Adafruit_LED_Backpack import SevenSegment
+import paho.mqtt.client as mqtt
+
+# Initial setup
+
+## Outputs and initial state
+
+greenled = GPIO(43, "out")
+
+hum_disp = SevenSegment.SevenSegment(address=0x70, busnum=6)
+temp_disp = SevenSegment.SevenSegment(address=0x72, busnum=6)
+light_disp = SevenSegment.SevenSegment(address=0x74, busnum=6)
+
+hum_disp.begin()
+temp_disp.begin()
+light_disp.begin()
+
+colon = False
+previous_temp = 0
+previous_hum = 0
+previous_light = 0
+
+## Test 7-segment displays
+
+numbers = [0000, 1111, 2222, 3333, 4444, 5555, 6666, 7777, 8888, 9999]
+displays = [hum_disp, temp_disp, light_disp]
+
+for disp_module in displays:
+    for i in numbers:
+        disp_module.clear()
+        disp_module.print_float(i, decimal_digits=0, justify_right=False)
+        disp_module.set_colon(colon)
+        disp_module.write_display()
+        time.sleep(0.1)
+
+## MQTT broker host
+
+broker = "mosquitto"
+
+# Hardware I/O functions
+
+## Green LED:
+## flash 2s = connected to broker
+## single flash = message RX
+## constant = failed to connect 
+
+def indicate(mode):
+    if mode == 'connected':
+        for i in range(0, 20):
+            greenled.write(True)
+            time.sleep(0.1)
+            greenled.write(False)
+            time.sleep(0.1)
+    elif mode == 'message':
+            greenled.write(True)
+            time.sleep(0.1)
+            greenled.write(False)
+    else:
+        greenled.write(True)
+    return
+
+## Update temperature display
+
+def update_temp(value):
+    temp_disp.clear()
+    temp_disp.print_float(value, decimal_digits=2)
+    temp_disp.set_colon(colon)
+    temp_disp.write_display()
+
+def update_hum(value):
+    hum_disp.clear()
+    hum_disp.print_float(value, decimal_digits=2)
+    hum_disp.set_colon(colon)
+    hum_disp.write_display()
+
+def update_light(value):
+    light_disp.clear()
+    light_disp.print_float(value, decimal_digits=0, justify_right=False)
+    light_disp.set_colon(colon)
+    light_disp.write_display()
+
+# MQTT
+
+## The callback for when the client receives a CONNACK response from the server.
+
+def on_connect(client, userdata, flags, rc):
+        print("Connected with result code "+str(rc))
+        client.subscribe("sensor/#", 0)
+        indicate('connected')
+
+## The callback for when a PUBLISH message is received from the server.
+
+def on_message(client, userdata, msg):
+        indicate('message')
+        topic = msg.topic.lstrip('sensor/')
+        if topic == 'temperature':
+            global previous_temp
+            if msg.payload != previous_temp:
+                update_temp(float(msg.payload))
+                previous_temp = msg.payload
+        elif topic == 'humidity':
+            global previous_hum
+            if msg.payload != previous_hum:
+                update_hum(float(msg.payload))
+                previous_hum = msg.payload
+        elif topic == 'luminosity':
+            global previous_light
+            if msg.payload != previous_light:
+                update_light(float(msg.payload))
+                previous_light = msg.payload
+        else:
+            return
+
+## Setup client
+
+client = mqtt.Client(client_id="console_sensor_indicators", clean_session=True)
+client.on_connect = on_connect
+client.on_message = on_message
+
+## Connect and keep retrying on failure
+
+try:
+    client.connect(broker, 1883, 60)
+except (KeyboardInterrupt, SystemExit):
+    raise
+except:
+    print "Failed to connect to broker"
+    indicate("fail")
+    time.sleep(1)
+
+## Run loop and wait for messages
+
+client.loop_forever()

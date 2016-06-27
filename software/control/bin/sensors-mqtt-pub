@@ -1,0 +1,76 @@
+#!/usr/bin/python
+# -*- encoding: utf-8 -*-
+
+import sys
+import time
+import smbus
+import htu21d
+from periphery import GPIO
+import paho.mqtt.publish as publish
+
+# I2C bus, sensors and config, LED
+
+bus = 6
+
+lux = smbus.SMBus(bus)
+luxaddr = 0x23
+temphum = htu21d.Htu21d(bus)
+temphum.use_temperature = True
+
+redled = GPIO(42, "out")
+redled.write(False)
+
+# MQTT broker host and topics
+
+broker = "mosquitto"
+temp_topic = "sensor/temperature"
+hum_topic = "sensor/humidity"
+lux_topic = "sensor/luminosity"
+
+# Red LED:
+# flash = message published to broker
+# constant = failed to publish to broker
+
+def indicate(mode):
+    if mode == 'success':
+        redled.write(True)
+        time.sleep(0.2)
+        redled.write(False)
+        time.sleep(0.8)
+    else:
+        redled.write(True)
+        time.sleep(1)
+    return
+
+# Main loop
+
+while True:
+           try:
+               temperature = round(temphum.temperature, 2)
+               humidity = round(temphum.humidity, 2)
+           except (KeyboardInterrupt, SystemExit):
+               raise
+           except:
+               temperature = humidity = 0.00
+               print "Failed to read HTU21D"
+
+           try:
+               luxdata = lux.read_i2c_block_data(luxaddr,0x11)
+               luminosity = int((luxdata[1] + (256 * luxdata[0])) / 1.2)
+           except (KeyboardInterrupt):
+               raise
+           except:
+               luminosity = 0.00
+               print "Failed to read BH1750"
+
+           print temperature, humidity, luminosity
+           msgs = [{'topic':temp_topic, 'payload':temperature}, (hum_topic, humidity, 0, False), (lux_topic, luminosity, 0, False)]
+           try:
+               publish.multiple(msgs, hostname=broker, client_id="control_sensors")
+               indicate("success")
+           except (KeyboardInterrupt, SystemExit):
+               raise
+           except:
+               print "Failed to publish to broker"
+               indicate("fail")
+

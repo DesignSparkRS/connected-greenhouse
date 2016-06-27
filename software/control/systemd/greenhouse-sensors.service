@@ -1,0 +1,12 @@
+[Unit]
+Description=Greenhouse Sensors
+Wants=init-pins.service
+After=init-pins.service
+
+[Service]
+Type=simple
+RemainAfterExit=no
+ExecStart=/opt/greenhouse/bin/sensors-mqtt-pub
+
+[Install]
+WantedBy=multi-user.target

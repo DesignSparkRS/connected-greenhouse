@@ -1,0 +1,14 @@
+[Unit]
+Description=Initialise Greenhouse I/O
+After=network.target
+Before=greenhouse-switches.service
+Before=greenhouse-indicators.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=true
+ExecStart=/opt/greenhouse/bin/init-pins-console
+
+[Install]
+WantedBy=greenhouse-switches.service
+WantedBy=greenhouse-indicators.service

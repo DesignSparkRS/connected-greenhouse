@@ -1,0 +1,20 @@
+#!/bin/bash
+
+echo "To reset the Node-RED flow enter RESET, followed by [ENTER]:"
+echo ""
+
+read input
+
+echo ""
+
+if [ $input = 'RESET' ] ;
+then
+  echo "Resetting...."
+  ssh rs@cloud.rs '/usr/local/bin/reset-node-red-flow'
+  echo ""
+  echo "Done!"
+else
+  echo "Aborted."
+fi
+
+echo ""

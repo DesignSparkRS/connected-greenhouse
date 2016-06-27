@@ -1,0 +1,153 @@
+#!/usr/bin/python
+# -*- encoding: utf-8 -*-
+
+import sys
+import time
+from periphery import GPIO
+import paho.mqtt.client as mqtt
+
+# Initial setup
+
+## Outputs and initial state
+
+illum_relay = GPIO(183, "out")
+vent_relay = GPIO(12, "out")
+vent_switch = GPIO(129, "in")
+fan_relay = GPIO(13, "out")
+greenled = GPIO(43, "out")
+pwm2_duty = "/sys/class/pwm/pwmchip0/pwm2/duty_cycle"
+
+outputs = [illum_relay, vent_relay, fan_relay, greenled]
+for pin in outputs:
+    pin.write(False)
+
+illum_status = "off"
+vent_status = "off"
+fan_speed = 100
+
+## MQTT broker host
+
+# Hardware I/O functions
+
+broker = "mosquitto"
+
+## Green LED:
+## flash 2s = connected to broker
+## single flash = message RX
+## constant = failed to connect 
+
+def indicate(mode):
+    if mode == 'connected':
+        for i in range(0, 20):
+            greenled.write(True)
+            time.sleep(0.1)
+            greenled.write(False)
+            time.sleep(0.1)
+    elif mode == 'message':
+            greenled.write(True)
+            time.sleep(0.2)
+            greenled.write(False)
+    else:
+        greenled.write(True)
+    return
+
+## Illumination
+
+def set_illumination(state):
+    if state == 'on':
+        print "Turning illumination on"
+        illum_relay.write(True)
+    elif state == 'off':
+        print "Turning illumination off"
+        illum_relay.write(False)
+    else:
+        print "Invalid command"
+    return
+
+## Vent
+
+def set_vent(state):
+    if state == 'on':
+        print "Turning ventilation on"
+        vent_relay.write(True)
+        while vent_switch.read() == True:
+            time.sleep(0.01)
+        vent_relay.write(False)
+        fan_relay.write(True)
+    elif state == 'off':
+        print "Turning ventilation off"
+        vent_relay.write(True)
+        while vent_switch.read() == False:
+            time.sleep(0.01)
+        vent_relay.write(False)
+        fan_relay.write(False)
+    else:
+        print "Invalid command"
+    return
+
+def set_fan_speed(command):
+    try:
+        speed = int(command)
+        if speed < 50:
+            speed = 50
+        elif speed > 100:
+            speed = 100
+        duty_cycle = 40000 - (speed * 400)
+        print "Setting fan speed: ", speed, " PWM duty period: ", duty_cycle
+        with open(pwm2_duty, "w") as fan_duty:
+            fan_duty.write(str(duty_cycle))
+    except:
+        print "Invalid command"
+
+# MQTT
+
+## The callback for when the client receives a CONNACK response from the server.
+
+def on_connect(client, userdata, flags, rc):
+        print("Connected with result code "+str(rc))
+        client.subscribe("actuator/#")
+        indicate("connected")
+
+## The callback for when a PUBLISH message is received from the server.
+
+def on_message(client, userdata, msg):
+        indicate("message")
+        topic = msg.topic.lstrip("actuator/")
+        if topic == 'illumination':
+            global illum_status
+            if msg.payload != illum_status:
+                set_illumination(msg.payload)
+                illum_status = msg.payload
+        elif topic == 'ventilation':
+            global vent_status
+            if msg.payload != vent_status:
+                set_vent(msg.payload)
+                vent_status = msg.payload
+        elif topic == 'fan_speed':
+            global fan_speed
+            if msg.payload != fan_speed:
+                set_fan_speed(msg.payload)
+                fan_speed = msg.payload
+        else:
+            print "Invalid topic"
+
+## Setup client
+
+client = mqtt.Client(client_id="control_actuators", clean_session=True)
+client.on_connect = on_connect
+client.on_message = on_message
+
+## Connect and keep retrying on failure
+
+try:
+    client.connect(broker, 1883, 60)
+except (KeyboardInterrupt):
+    raise
+except:
+    print "Failed to connect to broker"
+    indicate("fail")
+    time.sleep(1)
+
+## Run loop and wait for messages
+
+client.loop_forever()

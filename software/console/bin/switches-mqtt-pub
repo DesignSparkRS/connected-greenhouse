@@ -1,0 +1,83 @@
+#!/usr/bin/python
+# -*- encoding: utf-8 -*-
+
+import sys
+import time
+from periphery import GPIO
+import paho.mqtt.publish as publish
+
+# Switch inputs 
+
+mode_switch = GPIO(182, "in")
+illum_switch = GPIO(49, "in")
+vent_switch = GPIO(48, "in")
+
+# Mode switch LEDs and MQTT pub LED outputs
+
+mode_red = GPIO(130, "out")
+mode_green = GPIO(131, "out")
+
+redled = GPIO(42, "out")
+redled.write(False)
+
+# MQTT broker host and topics
+
+broker = "mosquitto"
+mode_topic = "greenhouse/mode"
+illum_topic = "greenhouse/manual/illumination"
+vent_topic = "greenhouse/manual/ventilation"
+
+previous_mode = 'automatic'
+
+# Red LED:
+# flash = message published to broker
+# constant = failed to publish to broker
+
+def indicate(mode):
+    if mode == 'success':
+        redled.write(True)
+        time.sleep(0.2)
+        redled.write(False)
+        time.sleep(0.8)
+    else:
+        redled.write(True)
+        time.sleep(1)
+    return
+
+# Main loop
+
+while True:
+    current_mode = mode_switch.read()
+    if current_mode != previous_mode:
+        if current_mode == True:
+            system_mode = 'manual'
+            mode_green.write(False)
+            mode_red.write(True)
+        else:
+            system_mode = 'automatic'
+            mode_red.write(False)
+            mode_green.write(True)
+        previous_mode = current_mode
+
+    if illum_switch.read() == True:
+        illum = 'on'
+    else:
+        illum = 'off'
+
+    if vent_switch.read() == True:
+        vent = "on"
+    else:
+        vent = 'off'
+
+    print "System:", system_mode, "// Illumination:", illum, "// Ventillation:", vent
+    msgs = [{'topic':mode_topic, 'payload':system_mode}, (illum_topic, illum, 0, False), (vent_topic, vent, 0, False)]
+
+    try:
+        publish.multiple(msgs, hostname=broker, client_id="console_switches")
+        indicate("success")
+    except (KeyboardInterrupt, SystemExit):
+        raise
+    except:
+        print "Failed to publish to broker"
+        indicate("fail")
+
